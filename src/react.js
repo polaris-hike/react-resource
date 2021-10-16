@@ -1,5 +1,6 @@
 import {wrapToVdom} from './utils';
 import {createDOM} from './react-dom'
+import {REACT_FORWARD_REF} from './constants';
 
 export const updateQueue = {
   isBatchingUpdate: false, // NOTE: 默认非批量更新 同步
@@ -93,7 +94,6 @@ class Component {
   }
 
   forceUpdate() {
-    console.log(this.oldRenderVdom);
     const oldDOM = findDom(this.oldRenderVdom);
     const newRenderVDOM = this.render();
 
@@ -103,7 +103,6 @@ class Component {
 }
 
 function compareTwoVDom(container,oldVDom,newVDom) {
-  console.log(container);
   const oldDOM = findDom(oldVDom);
   const newDOM = createDOM(newVDom);
   container.replaceChild(newDOM,oldDOM);
@@ -111,7 +110,6 @@ function compareTwoVDom(container,oldVDom,newVDom) {
 
 function findDom(vdom) {
   if (!vdom) return null;
-  let dom;
   if (vdom.dom) {
     return vdom.dom
   } else {
@@ -119,6 +117,17 @@ function findDom(vdom) {
   }
 }
 
-const React = {createElement, Component};
+function createRef() {
+  return {current:null};
+}
+
+function forwardRef(render) {
+  return {
+    $$typeof:REACT_FORWARD_REF,
+    render
+  }
+}
+
+const React = {createElement, Component, createRef,forwardRef};
 
 export default React;

@@ -1,4 +1,4 @@
-import {REACT_TEXT} from './constants';
+import {REACT_TEXT,REACT_FORWARD_REF} from './constants';
 import {addEvent} from './event';
 
 function render(vdom,container) {
@@ -12,11 +12,14 @@ function mount(vdom,container) {
   }
 }
 
+// NOTE: 虚拟 dom 转化为真实 dom
 export function createDOM(vdom) {
   if (!vdom) return null;
-  const {type, props} = vdom;
+  const {type, props, ref} = vdom;
   let dom;
-  if (type === REACT_TEXT) {
+  if (type && type.$$typeof === REACT_FORWARD_REF) {
+    return mountForwardComponent(vdom);
+  }else if (type === REACT_TEXT) {
     dom = document.createTextNode(props.content)
   } else if(typeof type === 'function') {
     if (type.isReactComponent) { // NOTE: 类组件
@@ -40,12 +43,23 @@ export function createDOM(vdom) {
     }
   }
   vdom.dom = dom;
+  if (ref){
+    ref.current = dom;
+  }
   return dom;
 }
 
+function mountForwardComponent(vdom) {
+  const {type, props, ref} = vdom;
+  const renderVdom = type.render(props,ref);
+  vdom.oldRenderVdom = renderVdom;
+  return createDOM(renderVdom);
+}
+
 function mountClassComponent(vdom) {
-  const {type, props} = vdom;
+  const {type, props, ref} = vdom;
   const classInstance = new type(props);
+  if (ref) ref.current = classInstance;
   const renderVdom = classInstance.render();
   classInstance.oldRenderVdom =vdom.oldRenderVdom = renderVdom;
   return createDOM(renderVdom);
@@ -53,9 +67,8 @@ function mountClassComponent(vdom) {
 
 function mountFunctionComponent(vdom) {
   const {type, props} = vdom;
-  const classInstance = new type(props);
   const renderVdom =  type(props);
-  classInstance.oldRenderVdom = vdom.oldRenderVdom = renderVdom;
+  vdom.oldRenderVdom = renderVdom;
   return createDOM(renderVdom);
 }
 
