@@ -1,6 +1,18 @@
 import {wrapToVdom} from './utils';
 import {createDOM} from './react-dom'
 
+export const updateQueue = {
+  isBatchingUpdate: false, // NOTE: 默认非批量更新 同步
+  updaters: [],
+  batchUpdate() {
+    for (const updater of updateQueue.updaters) {
+      updater.updateComponent();
+    }
+    updateQueue.updaters.length = 0;
+    updateQueue.isBatchingUpdate = false;
+  }
+}
+
 function createElement(type, config, children) {
   let ref;
   let key;
@@ -32,12 +44,18 @@ class Updater {
   }
 
   emitUpdate() {
-    this.updateComponent();
+    // NOTE: 可能是批量异步更新 也可能是非批量的同步更新
+    if (updateQueue.isBatchingUpdate) {
+      // 批量异步更新
+      updateQueue.updaters.push(this)
+    } else {
+      this.updateComponent();
+    }
   }
 
   updateComponent() {
     const {classInstance, pendingStates} = this;
-    if (pendingStates.length) {
+    if (pendingStates.length > 0) {
       shouldUpdate(classInstance, this.getState());
     }
   }
@@ -46,6 +64,9 @@ class Updater {
     const {classInstance, pendingStates} = this;
     let {state} = classInstance;
     pendingStates.forEach((partialState) => {
+      if (typeof partialState === 'function') {
+        partialState = partialState(state);
+      }
       state = {...state, ...partialState};
     });
     pendingStates.length = 0

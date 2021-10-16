@@ -29,15 +29,25 @@ class Counter extends React.Component{
   constructor(props) {
     super(props)
     this.state = {
-      count:1
+      count:0
     }
   }
   onClick = () => {
     this.setState({count:this.state.count+1});
+    console.log(this.state.count);
+    this.setState({count:this.state.count+1});
+    console.log(this.state.count);
+    setTimeout(() => {
+      this.setState({count:this.state.count+1});
+      console.log(this.state.count);
+      this.setState({count:this.state.count+1});
+      console.log(this.state.count);
+    })
+    // this.setState((state)=>({count:state.count+1}))
+    // this.setState((state)=>({count:state.count+1}))
     console.log(this.state);
   }
   render() {
-    console.log(1);
     return (
       <div>
         <p>{this.props.title}</p>
