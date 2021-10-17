@@ -9,6 +9,7 @@ function mount(vdom,container) {
   const newDOM = createDOM(vdom);
   if (newDOM) {
     container.appendChild(newDOM)
+    if (newDOM._compoentDidMount) newDOM._compoentDidMount();
   }
 }
 
@@ -60,9 +61,17 @@ function mountClassComponent(vdom) {
   const {type, props, ref} = vdom;
   const classInstance = new type(props);
   if (ref) ref.current = classInstance;
+  if (classInstance.componentWillMount) {
+    classInstance.componentWillMount()
+  }
+  vdom.classInstance = classInstance;
   const renderVdom = classInstance.render();
   classInstance.oldRenderVdom =vdom.oldRenderVdom = renderVdom;
-  return createDOM(renderVdom);
+  const dom = createDOM(renderVdom);
+  if (classInstance.componentDidMount) {
+    dom._compoentDidMount = classInstance.componentDidMount.bind(classInstance);
+  }
+  return dom;
 }
 
 function mountFunctionComponent(vdom) {
@@ -76,7 +85,7 @@ function reconcileChildren(vdom,container) {
   vdom.forEach(child => mount(child,container))
 }
 
-function updateProps(dom,oldProps,newProps) {
+export function updateProps(dom,oldProps,newProps) {
   for (const key in newProps) {
     if (key === 'children') {
       continue;// 后续处理
